@@ -13,22 +13,29 @@ class KeyboardJoy(Node):
     def __init__(self):
         super().__init__('keyboard_joy')
 
-        # Print key usage instructions
-        self.print_usage_instructions()
+        # Load key mappings from YAML file installed with the package
+        self.load_key_mappings()
 
+        # Print a message to indicate that the node has started
+        self.get_logger().info("KeyboardJoy Node Started")
+
+        # Print the loaded key mappings
+        self.get_logger().info(f"Loaded axis mappings: {self.axis_mappings}")
+        self.get_logger().info(f"Loaded button mappings: {self.button_mappings}")
+        
         # Create a publisher for the Joy message
         self.joy_publisher = self.create_publisher(Joy, 'joy', 10)
 
-        # Initialize Joy message with 8 axes and 12 buttons (common setup)
+        # Initialize Joy message with the correct number of axes and buttons
+        max_axis_index = max(self.axis_mappings.values(), key=lambda x: x[0])[0] if self.axis_mappings else 0
+        max_button_index = max(self.button_mappings.values()) if self.button_mappings else 0
+        
         self.joy_msg = Joy()
-        self.joy_msg.axes = [0.0] * 8   
-        self.joy_msg.buttons = [0] * 12 
+        self.joy_msg.axes = [0.0] * (max_axis_index + 1)
+        self.joy_msg.buttons = [0] * (max_button_index + 1)
 
         # Create a lock for thread-safe updates
         self.lock = threading.Lock()
-
-        # Load key mappings from YAML file installed with the package
-        self.load_key_mappings()
 
         # Start a thread to listen to keyboard inputs
         self.listener_thread = threading.Thread(target=self.start_keyboard_listener)
@@ -36,16 +43,6 @@ class KeyboardJoy(Node):
 
         # Create a timer to publish Joy messages at a fixed rate
         self.timer = self.create_timer(0.1, self.publish_joy)
-
-    def print_usage_instructions(self):
-        """Print instructions on how to use the keyboard for controlling the joy node."""
-        self.get_logger().info("KeyboardJoy Node Started")
-        self.get_logger().info("Use the following keys to simulate joystick input:")
-        self.get_logger().info("  w/s: Increase/Decrease axis 1 value")
-        self.get_logger().info("  d/a: Increase/Decrease axis 2 value")
-        self.get_logger().info("  Arrow Up/Down: Increase/Decrease axis 3 value")
-        self.get_logger().info("  Arrow Left/Right: Increase/Decrease axis 4 value")
-        self.get_logger().info("  0-9: Press number keys to toggle corresponding button")
 
     def load_key_mappings(self):
         """Load key mappings from a YAML file installed with the package."""
@@ -57,8 +54,8 @@ class KeyboardJoy(Node):
             key_mappings = yaml.safe_load(file)
 
         # Extract axes and buttons mappings from the loaded YAML file
-        self.axis_mappings = key_mappings['axes']
-        self.button_mappings = key_mappings['buttons']
+        self.axis_mappings = key_mappings.get('axes', {})
+        self.button_mappings = key_mappings.get('buttons', {})
 
     def start_keyboard_listener(self):
         """Start listening to keyboard inputs in a separate thread."""
