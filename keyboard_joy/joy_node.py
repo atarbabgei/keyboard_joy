@@ -13,7 +13,10 @@ class KeyboardJoy(Node):
     def __init__(self):
         super().__init__('keyboard_joy')
 
-        # Load key mappings from YAML file installed with the package
+        # Declare a parameter for the configuration file path
+        self.declare_parameter('config', '')
+
+        # Load key mappings from YAML file
         self.load_key_mappings()
 
         # Print a message to indicate that the node has started
@@ -45,13 +48,21 @@ class KeyboardJoy(Node):
         self.timer = self.create_timer(0.1, self.publish_joy)
 
     def load_key_mappings(self):
-        """Load key mappings from a YAML file installed with the package."""
-        # Get the path to the package share directory
-        config_file_path = os.path.join(get_package_share_directory('keyboard_joy'), 'config', 'key_mappings.yaml')
-        
+        """Load key mappings from a YAML file."""
+        # Get the config parameter
+        config_file_path = self.get_parameter('config').get_parameter_value().string_value
+
+        if not config_file_path:
+            # Use default file path if no parameter provided
+            config_file_path = os.path.join(get_package_share_directory('keyboard_joy'), 'config', 'key_mappings.yaml')
+
         # Load the YAML file
-        with open(config_file_path, 'r') as file:
-            key_mappings = yaml.safe_load(file)
+        try:
+            with open(config_file_path, 'r') as file:
+                key_mappings = yaml.safe_load(file)
+        except FileNotFoundError:
+            self.get_logger().error(f"Configuration file not found: {config_file_path}")
+            key_mappings = {}
 
         # Extract axes and buttons mappings from the loaded YAML file
         self.axis_mappings = key_mappings.get('axes', {})

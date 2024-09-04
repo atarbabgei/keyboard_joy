@@ -45,15 +45,23 @@ Tested on ROS2 Humble.
 
 ## Usage
 
-To run the `keyboard_joy` node, execute the following command:
+To run the `keyboard_joy` node using the default configuration (as stored in `/config/key_mappings.yaml`), execute the following command:
 
 ```bash
-ros2 run keyboard_joy joy_node
+ros2 launch keyboard_joy keyboard_joy.launch.py
 ```
+
+However, if you want to use a custom YAML configuration file for your project, run the following command:
+
+```bash
+ros2 launch keyboard_joy keyboard_joy.launch.py config:=/your_path/your_config_file.yaml
+```
+
+Replace `/your_path/your_config_file.yaml` with the path to your custom YAML file.
 
 ## Configuration
 
-The key mappings for the joystick simulation are configured using a YAML file located in the `config` directory of the package. This file is named `key_mappings.yaml` and allows you to customize which keyboard keys map to specific joystick axes and buttons.
+The key mappings for the joystick simulation are configured using a YAML file which allows you to customize which keyboard keys map to specific joystick axes and buttons.
 
 ### Example YAML Configuration
 
@@ -68,14 +76,14 @@ axes:
   Key.left: [3, -1.0]
   Key.right: [3, 1.0]
 buttons:
-  0: 0
-  1: 1
-  2: 2
-  3: 3
-  4: 4
-  5: 5
-  6: 6
-  7: 7
-  8: 8
-  9: 9
+  '0': 0
+  '1': 1
+  '2': 2
+  '3': 3
+  '4': 4
+  '5': 5
+  '6': 6
+  '7': 7
+  '8': 8
+  '9': 9
 ```

@@ -13,6 +13,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
+        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
     ],
         install_requires=[
         'setuptools',
@@ -26,7 +27,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'joy_node = keyboard_joy.joy_node:main',  # Entry point for your node
+            'joy_node = keyboard_joy.joy_node:main', 
         ],
     },
 )
