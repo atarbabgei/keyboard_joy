@@ -12,6 +12,11 @@ axes:
   Key.left: [3, 1.0]
   Key.right: [3, -1.0]
 
+# Parameters for axis increment_rate and increment_step
+parameters:
+  axis_increment_rate: 0.01   # Time interval for updating axis values
+  axis_increment_step: 0.02  # Step size for axis value change
+
 buttons:
   # Button mappings: Define which keyboard keys toggle specific joystick buttons
   # Format: '<key>: <button_index>'
@@ -24,4 +29,4 @@ buttons:
   '6': 6 
   '7': 7 
   '8': 8 
-  '9': 9 
+  '9': 9

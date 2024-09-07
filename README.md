@@ -66,17 +66,24 @@ The key mappings for the joystick simulation are configured using a YAML file wh
 ### Example YAML Configuration
 
 ```yaml
+# Config for mapping keyboard keys to joystick axes and buttons
+
 axes:
   # Axis mappings: Define which keyboard keys control specific joystick axes
   # Format: '<key>: [<axis_index>, <axis_value>]'
   w: [0, 1.0] 
   s: [0, -1.0] 
-  d: [1, 1.0]
-  a: [1, -1.0]
+  a: [1, 1.0]
+  d: [1, -1.0]
   Key.up: [2, 1.0]   
   Key.down: [2, -1.0]
-  Key.left: [3, -1.0]
-  Key.right: [3, 1.0]
+  Key.left: [3, 1.0]
+  Key.right: [3, -1.0]
+
+# Parameters for axis increment_rate and increment_step
+parameters:
+  axis_increment_rate: 0.01   # Time interval for updating axis values
+  axis_increment_step: 0.02  # Step size for axis value change
 
 buttons:
   # Button mappings: Define which keyboard keys toggle specific joystick buttons
@@ -90,5 +97,5 @@ buttons:
   '6': 6 
   '7': 7 
   '8': 8 
-  '9': 9 
+  '9': 9
 ```

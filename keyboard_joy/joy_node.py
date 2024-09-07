@@ -13,18 +13,17 @@ class KeyboardJoy(Node):
     def __init__(self):
         super().__init__('keyboard_joy')
 
-        # Declare a parameter for the configuration file path
+        # Declare parameter for configuration file path
         self.declare_parameter('config', '')
 
-        # Load key mappings from YAML file
+        # Load key mappings and other parameters from the YAML file
         self.load_key_mappings()
 
         # Print a message to indicate that the node has started
         self.get_logger().info("KeyboardJoy Node Started")
-
-        # Print the loaded key mappings
         self.get_logger().info(f"Loaded axis mappings: {self.axis_mappings}")
         self.get_logger().info(f"Loaded button mappings: {self.button_mappings}")
+        self.get_logger().info(f"Axis increment rate: {self.axis_increment_rate}, Axis increment step: {self.axis_increment_step}")
         
         # Create a publisher for the Joy message
         self.joy_publisher = self.create_publisher(Joy, 'joy', 10)
@@ -37,6 +36,9 @@ class KeyboardJoy(Node):
         self.joy_msg.axes = [0.0] * (max_axis_index + 1)
         self.joy_msg.buttons = [0] * (max_button_index + 1)
 
+        # Track active axes for gradual updates
+        self.active_axes = {}
+
         # Create a lock for thread-safe updates
         self.lock = threading.Lock()
 
@@ -47,16 +49,16 @@ class KeyboardJoy(Node):
         # Create a timer to publish Joy messages at a fixed rate
         self.timer = self.create_timer(0.1, self.publish_joy)
 
+        # Create a timer for gradually updating active axes
+        self.increment_timer = self.create_timer(self.axis_increment_rate, self.update_active_axes)
+
     def load_key_mappings(self):
-        """Load key mappings from a YAML file."""
-        # Get the config parameter
+        """Load key mappings and parameters from a YAML file."""
         config_file_path = self.get_parameter('config').get_parameter_value().string_value
 
         if not config_file_path:
-            # Use default file path if no parameter provided
             config_file_path = os.path.join(get_package_share_directory('keyboard_joy'), 'config', 'key_mappings.yaml')
 
-        # Load the YAML file
         try:
             with open(config_file_path, 'r') as file:
                 key_mappings = yaml.safe_load(file)
@@ -64,9 +66,13 @@ class KeyboardJoy(Node):
             self.get_logger().error(f"Configuration file not found: {config_file_path}")
             key_mappings = {}
 
-        # Extract axes and buttons mappings from the loaded YAML file
         self.axis_mappings = key_mappings.get('axes', {})
         self.button_mappings = key_mappings.get('buttons', {})
+
+        # Load axis_increment_rate and axis_increment_step from the 'parameters' section
+        parameters = key_mappings.get('parameters', {})
+        self.axis_increment_rate = parameters.get('axis_increment_rate', 0.1)  # Default to 0.1 if not specified
+        self.axis_increment_step = parameters.get('axis_increment_step', 0.05)  # Default to 0.05 if not specified
 
     def start_keyboard_listener(self):
         """Start listening to keyboard inputs in a separate thread."""
@@ -79,7 +85,8 @@ class KeyboardJoy(Node):
             key_str = self.key_to_string(key)
             if key_str in self.axis_mappings:
                 axis, value = self.axis_mappings[key_str]
-                self.joy_msg.axes[axis] = value
+                # Set the axis as active with the target value
+                self.active_axes[axis] = value
             elif key_str in self.button_mappings:
                 button_index = self.button_mappings[key_str]
                 self.joy_msg.buttons[button_index] = 1
@@ -90,7 +97,10 @@ class KeyboardJoy(Node):
             key_str = self.key_to_string(key)
             if key_str in self.axis_mappings:
                 axis, _ = self.axis_mappings[key_str]
-                self.joy_msg.axes[axis] = 0.0
+                # Remove the axis from active axes
+                if axis in self.active_axes:
+                    del self.active_axes[axis]
+                self.joy_msg.axes[axis] = 0.0  # Reset to zero on release
             elif key_str in self.button_mappings:
                 button_index = self.button_mappings[key_str]
                 self.joy_msg.buttons[button_index] = 0
@@ -102,7 +112,6 @@ class KeyboardJoy(Node):
         elif hasattr(key, 'name') and key.name is not None:
             return f'Key.{key.name}'
         else:
-            # Fallback to the string representation if all else fails
             return str(key)
 
     def publish_joy(self):
@@ -110,6 +119,17 @@ class KeyboardJoy(Node):
         with self.lock:
             self.joy_msg.header.stamp = self.get_clock().now().to_msg()
             self.joy_publisher.publish(self.joy_msg)
+
+    def update_active_axes(self):
+        """Update the active axes gradually based on the increment step."""
+        with self.lock:
+            for axis, target_value in self.active_axes.items():
+                current_value = self.joy_msg.axes[axis]
+                # Increment towards the target (1.0 or -1.0)
+                if target_value > 0:
+                    self.joy_msg.axes[axis] = min(current_value + self.axis_increment_step, target_value)
+                else:
+                    self.joy_msg.axes[axis] = max(current_value - self.axis_increment_step, target_value)
 
     def destroy_node(self):
         """Ensure the listener thread is properly stopped."""
