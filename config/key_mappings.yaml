@@ -2,21 +2,20 @@
 
 axes:
   # Axis mappings: Define which keyboard keys control specific joystick axes
-  # Format: '<key>: [<axis_index>, <axis_value>]'
-  w: [0, 1.0] 
-  s: [0, -1.0] 
-  a: [1, 1.0]
-  d: [1, -1.0]
-  Key.up: [2, 1.0]   
-  Key.down: [2, -1.0]
-  Key.left: [3, 1.0]
-  Key.right: [3, -1.0]
+  # Format: '<key>: [<axis_index>, <axis_value>, <mode>'
+  w: [0, 1.0, 'normal'] 
+  s: [0, -1.0, 'normal'] 
+  a: [1, 1.0, 'normal']
+  d: [1, -1.0, 'normal']
+  Key.up: [2, 1.0, 'sticky']   
+  Key.down: [2, -1.0, 'sticky']
+  Key.left: [3, 1.0, 'sticky']
+  Key.right: [3, -1.0, 'sticky']
 
-# Parameters for axis increment_rate, increment_step, and sticky_mode
+# Parameters for axis increment_rate, increment_step
 parameters:
   axis_increment_rate: 0.01   # Time interval for updating axis values
   axis_increment_step: 0.01   # Step size for axis value change
-  sticky_mode: true           # Enable sticky mode (true or false)
 
 buttons:
   # Button mappings: Define which keyboard keys toggle specific joystick buttons

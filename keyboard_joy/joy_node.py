@@ -19,9 +19,6 @@ class KeyboardJoy(Node):
         # Load key mappings and other parameters from the YAML file
         self.load_key_mappings()
 
-        # Debugging: Check if parameters were loaded properly
-        self.get_logger().info(f"Sticky Mode (loaded from YAML): {self.sticky_mode}")
-
         # Print a message to indicate that the node has started
         self.get_logger().info("KeyboardJoy Node Started")
         self.get_logger().info(f"Loaded axis mappings: {self.axis_mappings}")
@@ -73,18 +70,11 @@ class KeyboardJoy(Node):
         self.axis_mappings = key_mappings.get('axes', {})
         self.button_mappings = key_mappings.get('buttons', {})
 
-        # Load axis_increment_rate, axis_increment_step, and sticky_mode from the 'parameters' section
+        # Load axis_increment_rate, axis_increment_step from the 'parameters' section
         parameters = key_mappings.get('parameters', {})
 
         self.axis_increment_rate = parameters.get('axis_increment_rate', 0.1)  # Default to 0.1 if not specified
         self.axis_increment_step = parameters.get('axis_increment_step', 0.05)  # Default to 0.05 if not specified
-
-        # Debugging: Check if sticky_mode is in the parameters
-        self.sticky_mode = parameters.get('sticky_mode', False)  # Default to False if not specified
-        if 'sticky_mode' in parameters:
-            self.get_logger().info(f"Sticky mode found in YAML: {self.sticky_mode}")
-        else:
-            self.get_logger().warn("Sticky mode not found in YAML. Defaulting to False")
 
     def start_keyboard_listener(self):
         """Start listening to keyboard inputs in a separate thread."""
@@ -96,25 +86,28 @@ class KeyboardJoy(Node):
         with self.lock:
             key_str = self.key_to_string(key)
             if key_str in self.axis_mappings:
-                axis, value = self.axis_mappings[key_str]
-                if self.sticky_mode:
+                axis, value, mode = self.axis_mappings[key_str]
+                if mode == 'sticky':
                     # In sticky mode, increment the axis value gradually
                     self.sticky_axes[axis] = self.sticky_axes.get(axis, 0.0) + value * self.axis_increment_step
                     # Clamp the value and round to 4 decimal places
                     self.joy_msg.axes[axis] = round(max(min(self.sticky_axes[axis], 1.0), -1.0), 4)
                 else:
-                    # Regular behavior: set axis as active with the target value
+                    # Normal behavior: set axis as active with the target value
                     self.active_axes[axis] = value
+            elif key_str in self.button_mappings:
+                button_index = self.button_mappings[key_str]
+                self.joy_msg.buttons[button_index] = 1
 
     def on_release(self, key):
         """Callback for keyboard key release events."""
         with self.lock:
             key_str = self.key_to_string(key)
             if key_str in self.axis_mappings:
-                axis, _ = self.axis_mappings[key_str]
+                axis, _, mode = self.axis_mappings[key_str]
                 if axis in self.active_axes:
                     del self.active_axes[axis]
-                if not self.sticky_mode:
+                if mode != 'sticky':
                     self.joy_msg.axes[axis] = 0.0  # Reset to zero on release for non-sticky mode
             elif key_str in self.button_mappings:
                 button_index = self.button_mappings[key_str]
@@ -145,7 +138,7 @@ class KeyboardJoy(Node):
                     self.joy_msg.axes[axis] = round(min(current_value + self.axis_increment_step, target_value), 4)
                 else:
                     self.joy_msg.axes[axis] = round(max(current_value - self.axis_increment_step, target_value), 4)
-    
+
     def destroy_node(self):
         """Ensure the listener thread is properly stopped."""
         self.listener_thread.join()
