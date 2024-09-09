@@ -12,10 +12,11 @@ axes:
   Key.left: [3, 1.0]
   Key.right: [3, -1.0]
 
-# Parameters for axis increment_rate and increment_step
+# Parameters for axis increment_rate, increment_step, and sticky_mode
 parameters:
   axis_increment_rate: 0.01   # Time interval for updating axis values
-  axis_increment_step: 0.02  # Step size for axis value change
+  axis_increment_step: 0.01   # Step size for axis value change
+  sticky_mode: true           # Enable sticky mode (true or false)
 
 buttons:
   # Button mappings: Define which keyboard keys toggle specific joystick buttons
